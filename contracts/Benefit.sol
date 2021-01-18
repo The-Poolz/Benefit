@@ -2,14 +2,17 @@
 pragma solidity ^0.4.24;
 
 import "./IPozBenefit.sol";
+import "./IStaking.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 
 contract Benefit is IPOZBenefit, Ownable {
     constructor() public {
         MinHold = 1;
+        IsToken = true;
     }
 
+    bool public IsToken;
     address public TokenAddress;
     address public POZBenefit_Address;
     uint256 public MinHold;
@@ -30,6 +33,11 @@ contract Benefit is IPOZBenefit, Ownable {
         return ERC20(_Token).balanceOf(_Subject);
     }
 
+    function CheckStaking(address _Subject) internal view returns (uint256)
+    {
+       return IStaking(TokenAddress).stakeOf(_Subject);
+    }
+
     function IsPOZHolder(address _Subject) external view returns (bool) {
         return IsPOZInvestor(_Subject);
     }
@@ -38,7 +46,7 @@ contract Benefit is IPOZBenefit, Ownable {
         if (TokenAddress == address(0x0) && POZBenefit_Address == address(0x0))
             return false; // Last file in line, no change result
         return ((TokenAddress != address(0x0) &&
-            CheckBalance(TokenAddress, _investor) >= MinHold) ||
+           (IsToken? CheckBalance(TokenAddress, _investor) :CheckStaking(_investor)) >= MinHold) ||
             (POZBenefit_Address != address(0x0) &&
                 IPOZBenefit(POZBenefit_Address).IsPOZHolder(_investor)));
     }
