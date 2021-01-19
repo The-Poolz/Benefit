@@ -17,6 +17,15 @@ contract Benefit is IPOZBenefit, Ownable {
     address public POZBenefit_Address;
     uint256 public MinHold;
 
+    function SetMinHold (uint256 _MinHold) public onlyOwner {
+        require(_MinHold>0,'Must be more then 0');
+        MinHold = _MinHold;
+    }
+
+    function SwapIsToken() public onlyOwner {
+        IsToken = !IsToken;
+    }
+
     function SetTokenAddress(address _New_Address) public onlyOwner {
         TokenAddress = _New_Address;
     }
