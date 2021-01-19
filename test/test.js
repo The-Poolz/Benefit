@@ -64,5 +64,16 @@ contract("Benefit", async accounts => {
         status = await instance.IsPOZHolder(accounts[5]);
         assert.isTrue(status);
     });
-
+    it("set SetMinHold ", async () => {
+        let instance = await Benefit.deployed();
+        await instance.SetMinHold (15, { from: accounts[0] });
+        let hold = await instance.MinHold.call();
+        assert.equal(hold.toNumber(), 15);
+    });
+    it("Swap IsToken ", async () => {
+        let instance = await Benefit.deployed();
+        await instance.SwapIsToken ({ from: accounts[0] });
+        let istoken = await instance.IsToken.call();
+        assert.isFalse(istoken);
+    });
 });
