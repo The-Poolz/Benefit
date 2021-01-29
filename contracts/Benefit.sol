@@ -9,29 +9,34 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 contract Benefit is IPOZBenefit, Ownable {
     constructor() public {
         MinHold = 1;
-        IsToken = true;
+        ChecksCount = 0;
     }
 
-    bool public IsToken;
-    address public TokenAddress;
-    address public POZBenefit_Address;
-    uint256 public MinHold;
+    struct BalanceCheckData {
+        bool IsToken; //token or staking contract address
+        address ContractAddress; // the address of the token or th staking
+    }
 
-    function SetMinHold (uint256 _MinHold) public onlyOwner {
-        require(_MinHold>0,'Must be more then 0');
+    uint256 public MinHold; //minimum total holding to be POOLZ Holder
+    mapping(uint256 => BalanceCheckData) CheckList; //All the contracts to get the sum
+    uint256 public ChecksCount; //Total Checks to make
+
+    function SetMinHold(uint256 _MinHold) public onlyOwner {
+        require(_MinHold > 0, "Must be more then 0");
         MinHold = _MinHold;
     }
 
-    function SwapIsToken() public onlyOwner {
-        IsToken = !IsToken;
+    function AddNewBalanceCheckData(address _ContractAddress, bool _IsToken)
+        public
+        onlyOwner
+    {
+        CheckList[ChecksCount] = BalanceCheckData(_IsToken, _ContractAddress);
+        ChecksCount++;
     }
 
-    function SetTokenAddress(address _New_Address) public onlyOwner {
-        TokenAddress = _New_Address;
-    }
-
-    function SetPOZBenefitAddress(address _New_Address) public onlyOwner {
-        POZBenefit_Address = _New_Address;
+    function RemoveLastBalanceCheckData() public onlyOwner {
+        require(ChecksCount > 0, "Can't remove from none");
+        ChecksCount--;
     }
 
     function CheckBalance(address _Token, address _Subject)
@@ -42,21 +47,35 @@ contract Benefit is IPOZBenefit, Ownable {
         return ERC20(_Token).balanceOf(_Subject);
     }
 
-    function CheckStaking(address _Subject) internal view returns (uint256)
+    function CheckStaking(address _Contract, address _Subject)
+        internal
+        view
+        returns (uint256)
     {
-       return IStaking(TokenAddress).stakeOf(_Subject);
+        return IStaking(_Contract).stakeOf(_Subject);
     }
 
     function IsPOZHolder(address _Subject) external view returns (bool) {
-        return IsPOZInvestor(_Subject);
+         return CalcTotal(_Subject) >= MinHold;
     }
 
-    function IsPOZInvestor(address _investor) internal view returns (bool) {
-        if (TokenAddress == address(0x0) && POZBenefit_Address == address(0x0))
-            return false; // Last file in line, no change result
-        return ((TokenAddress != address(0x0) &&
-           (IsToken? CheckBalance(TokenAddress, _investor) :CheckStaking(_investor)) >= MinHold) ||
-            (POZBenefit_Address != address(0x0) &&
-                IPOZBenefit(POZBenefit_Address).IsPOZHolder(_investor)));
+    function CalcTotal(address _Subject) public view returns (uint256) {
+        uint256 Total = 0;
+        for (uint256 index = 0; index < ChecksCount; index++) {
+            Total =
+                Total +
+                (
+                    CheckList[index].IsToken
+                        ? CheckBalance(
+                            CheckList[index].ContractAddress,
+                            _Subject
+                        )
+                        : CheckStaking(
+                            CheckList[index].ContractAddress,
+                            _Subject
+                        )
+                );
+        }
+        return Total;
     }
 }
