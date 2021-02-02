@@ -5,6 +5,7 @@ import "./IPozBenefit.sol";
 import "./IStaking.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 contract Benefit is IPOZBenefit, Ownable {
     constructor() public {
@@ -14,7 +15,8 @@ contract Benefit is IPOZBenefit, Ownable {
 
     struct BalanceCheckData {
         bool IsToken; //token or staking contract address
-        address ContractAddress; // the address of the token or th staking
+        address ContractAddress; // the address of the token or the staking
+        address LpContract; // check the current Token Holdin in Lp
     }
 
     uint256 public MinHold; //minimum total holding to be POOLZ Holder
@@ -26,17 +28,39 @@ contract Benefit is IPOZBenefit, Ownable {
         MinHold = _MinHold;
     }
 
-    function AddNewBalanceCheckData(address _ContractAddress, bool _IsToken)
+    function AddNewLpCheck(address _Token, address _LpContract)
         public
         onlyOwner
     {
-        CheckList[ChecksCount] = BalanceCheckData(_IsToken, _ContractAddress);
+        CheckList[ChecksCount] = BalanceCheckData(false, _Token, _LpContract);
+        ChecksCount++;
+    }
+
+    function AddNewToken(address _ContractAddress) public onlyOwner {
+        CheckList[ChecksCount] = BalanceCheckData(
+            true,
+            _ContractAddress,
+            address(0x0)
+        );
+        ChecksCount++;
+    }
+
+    function AddNewStaking(address _ContractAddress) public onlyOwner {
+        CheckList[ChecksCount] = BalanceCheckData(
+            false,
+            _ContractAddress,
+            address(0x0)
+        );
         ChecksCount++;
     }
 
     function RemoveLastBalanceCheckData() public onlyOwner {
         require(ChecksCount > 0, "Can't remove from none");
         ChecksCount--;
+    }
+
+    function RemoveAll() public onlyOwner {
+        ChecksCount = 0;
     }
 
     function CheckBalance(address _Token, address _Subject)
@@ -56,7 +80,7 @@ contract Benefit is IPOZBenefit, Ownable {
     }
 
     function IsPOZHolder(address _Subject) external view returns (bool) {
-         return CalcTotal(_Subject) >= MinHold;
+        return CalcTotal(_Subject) >= MinHold;
     }
 
     function CalcTotal(address _Subject) public view returns (uint256) {
@@ -77,5 +101,17 @@ contract Benefit is IPOZBenefit, Ownable {
                 );
         }
         return Total;
+    }
+
+    function _CalcLP(
+        address _Contract,
+        address _Token,
+        address _Subject
+    ) internal view returns (uint256) {
+        uint256 TotalLp = ERC20(_Contract).totalSupply();
+        uint256 SubjectLp = ERC20(_Contract).balanceOf(_Subject);
+        uint256 TotalTokensOnLp = ERC20(_Token).balanceOf(_Contract);
+        //SubjectLp * TotalTokensOnLp / TotalLp
+        return SafeMath.div(SafeMath.mul(SubjectLp, TotalTokensOnLp), TotalLp);
     }
 }

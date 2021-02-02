@@ -39,7 +39,7 @@ contract("Benefit", async accounts => {
     it("Add Token", async () => {
         let instance = await Benefit.deployed();
         let token = await TestToken.deployed();
-        await instance.AddNewBalanceCheckData(token.address, true, { from: accounts[0] });
+        await instance.AddNewToken(token.address, { from: accounts[0] });
         assert.equal(await instance.ChecksCount.call(), 1,"Got only 1");
         assert.isFalse(await instance.IsPOZHolder(accounts[5]),"No token - No benefit");
         await token.FreeTest({ from: accounts[5] });
