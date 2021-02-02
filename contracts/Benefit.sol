@@ -86,19 +86,29 @@ contract Benefit is IPOZBenefit, Ownable {
     function CalcTotal(address _Subject) public view returns (uint256) {
         uint256 Total = 0;
         for (uint256 index = 0; index < ChecksCount; index++) {
-            Total =
-                Total +
-                (
-                    CheckList[index].IsToken
-                        ? CheckBalance(
-                            CheckList[index].ContractAddress,
-                            _Subject
-                        )
-                        : CheckStaking(
-                            CheckList[index].ContractAddress,
-                            _Subject
-                        )
-                );
+            if (CheckList[index].LpContract == address(0x0)) {
+                Total =
+                    Total +
+                    (
+                        CheckList[index].IsToken
+                            ? CheckBalance(
+                                CheckList[index].ContractAddress,
+                                _Subject
+                            )
+                            : CheckStaking(
+                                CheckList[index].ContractAddress,
+                                _Subject
+                            )
+                    );
+            } else {
+                Total =
+                    Total +
+                    _CalcLP(
+                        CheckList[index].LpContract,
+                        CheckList[index].ContractAddress,
+                        _Subject
+                    );
+            }
         }
         return Total;
     }
