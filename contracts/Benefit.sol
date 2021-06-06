@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.4.24;
+pragma solidity ^0.6.0;
 
 import "./IPozBenefit.sol";
 import "./IStaking.sol";
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "openzeppelin-solidity/contracts/access/Ownable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
@@ -79,7 +79,7 @@ contract Benefit is IPOZBenefit, Ownable {
         return IStaking(_Contract).stakeOf(_Subject);
     }
 
-    function IsPOZHolder(address _Subject) external view returns (bool) {//does the subject hold enough to be consindered a holder?
+    function IsPOZHolder(address _Subject) override external view returns (bool) {
         return CalcTotal(_Subject) >= MinHold;
     }
 
