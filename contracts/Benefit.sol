@@ -45,7 +45,7 @@ contract Benefit is IPOZBenefit, Ownable {
         ChecksCount++;
     }
 
-    function AddNewStaking(address _ContractAddress) public onlyOwner {
+    function AddNewStaking(address _ContractAddress) public onlyOwner {//adds new staking to check
         CheckList[ChecksCount] = BalanceCheckData(
             false,
             _ContractAddress,
@@ -59,11 +59,11 @@ contract Benefit is IPOZBenefit, Ownable {
         ChecksCount--;
     }
 
-    function RemoveAll() public onlyOwner {
+    function RemoveAll() public onlyOwner { //removes all checks
         ChecksCount = 0;
     }
 
-    function CheckBalance(address _Token, address _Subject)
+    function CheckBalance(address _Token, address _Subject) //returns token balance of subject
         internal
         view
         returns (uint256)
@@ -71,7 +71,7 @@ contract Benefit is IPOZBenefit, Ownable {
         return ERC20(_Token).balanceOf(_Subject);
     }
 
-    function CheckStaking(address _Contract, address _Subject)
+    function CheckStaking(address _Contract, address _Subject)//returns amount staked of subject
         internal
         view
         returns (uint256)
@@ -83,27 +83,27 @@ contract Benefit is IPOZBenefit, Ownable {
         return CalcTotal(_Subject) >= MinHold;
     }
 
-    function CalcTotal(address _Subject) public view returns (uint256) {
+    function CalcTotal(address _Subject) public view returns (uint256) { //calculates total holdings of subject
         uint256 Total = 0;
-        for (uint256 index = 0; index < ChecksCount; index++) {
-            if (CheckList[index].LpContract == address(0x0)) {
+        for (uint256 index = 0; index < ChecksCount; index++) { //runs over all checks
+            if (CheckList[index].LpContract == address(0x0)) {//if check is not an lp check
                 Total =
                     Total +
                     (
-                        CheckList[index].IsToken
+                        CheckList[index].IsToken //if check is token add balance of subject
                             ? CheckBalance(
                                 CheckList[index].ContractAddress,
                                 _Subject
-                            )
+                            ) //else add staking of subject
                             : CheckStaking(
                                 CheckList[index].ContractAddress,
                                 _Subject
                             )
                     );
-            } else {
+            } else {//if check is an lp check
                 Total =
                     Total +
-                    _CalcLP(
+                    _CalcLP( //add lp holdings to total
                         CheckList[index].LpContract,
                         CheckList[index].ContractAddress,
                         _Subject
@@ -113,14 +113,14 @@ contract Benefit is IPOZBenefit, Ownable {
         return Total;
     }
 
-    function _CalcLP(
+    function _CalcLP( // calculates lp holdings of subject
         address _Contract,
         address _Token,
         address _Subject
     ) internal view returns (uint256) {
-        uint256 TotalLp = ERC20(_Contract).totalSupply();
-        uint256 SubjectLp = ERC20(_Contract).balanceOf(_Subject);
-        uint256 TotalTokensOnLp = ERC20(_Token).balanceOf(_Contract);
+        uint256 TotalLp = ERC20(_Contract).totalSupply(); // total lp supply
+        uint256 SubjectLp = ERC20(_Contract).balanceOf(_Subject); // subject lp holdings
+        uint256 TotalTokensOnLp = ERC20(_Token).balanceOf(_Contract); // total tokens the lp holds
         //SubjectLp * TotalTokensOnLp / TotalLp
         return SafeMath.div(SafeMath.mul(SubjectLp, TotalTokensOnLp), TotalLp);
     }
