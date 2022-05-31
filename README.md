@@ -5,6 +5,8 @@
 
 
 commands: 
+```
+npm i
 truffle dashboard
-
 truffle migrate --f 1 --to 1 --network dashboard 
+```
